@@ -1,0 +1,4 @@
+{
+  // 设置不检查js的语法问题，防止flow报错
+  "javascript.validate.enable": false
+}
