@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.6.12
- * (c) 2014-2020 Evan You
+ * (c) 2014-2021 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -1784,18 +1784,19 @@
       " Expected " + (expectedTypes.map(capitalize).join(', '));
     var expectedType = expectedTypes[0];
     var receivedType = toRawType(value);
-    var expectedValue = styleValue(value, expectedType);
-    var receivedValue = styleValue(value, receivedType);
     // check if we need to specify expected value
-    if (expectedTypes.length === 1 &&
-        isExplicable(expectedType) &&
-        !isBoolean(expectedType, receivedType)) {
-      message += " with value " + expectedValue;
+    if (
+      expectedTypes.length === 1 &&
+      isExplicable(expectedType) &&
+      isExplicable(typeof value) &&
+      !isBoolean(expectedType, receivedType)
+    ) {
+      message += " with value " + (styleValue(value, expectedType));
     }
     message += ", got " + receivedType + " ";
     // check if we need to specify received value
     if (isExplicable(receivedType)) {
-      message += "with value " + receivedValue + ".";
+      message += "with value " + (styleValue(value, receivedType)) + ".";
     }
     return message
   }
@@ -1810,9 +1811,9 @@
     }
   }
 
+  var EXPLICABLE_TYPES = ['string', 'number', 'boolean'];
   function isExplicable (value) {
-    var explicitTypes = ['string', 'number', 'boolean'];
-    return explicitTypes.some(function (elem) { return value.toLowerCase() === elem; })
+    return EXPLICABLE_TYPES.some(function (elem) { return value.toLowerCase() === elem; })
   }
 
   function isBoolean () {
@@ -2433,9 +2434,12 @@
   }
 
   function initInjections (vm) {
+    // 根据inject中的key找到provide对应的key的值并放入result数组中
     var result = resolveInject(vm.$options.inject, vm);
     if (result) {
       toggleObserving(false);
+
+      // 数组的key定义到vm上
       Object.keys(result).forEach(function (key) {
         /* istanbul ignore else */
         {
@@ -3273,8 +3277,10 @@
   }
 
   function createComponentInstanceForVnode (
-    vnode, // we know it's MountedComponentVNode but flow doesn't
-    parent // activeInstance in lifecycle state
+    // we know it's MountedComponentVNode but flow doesn't
+    vnode,
+    // activeInstance in lifecycle state
+    parent
   ) {
     var options = {
       _isComponent: true,
@@ -3494,6 +3500,8 @@
     // so that we get proper render context inside it.
     // args order: tag, data, children, normalizationType, alwaysNormalize
     // internal version is used by render functions compiled from templates
+
+    // _c内部版本由模板编译的渲染函数使用
     vm._c = function (a, b, c, d) { return createElement(vm, a, b, c, d, false); };
     // normalization is always applied for the public version, used in
     // user-written render functions.
@@ -3504,6 +3512,7 @@
     var parentData = parentVnode && parentVnode.data;
 
     /* istanbul ignore else */
+    // 定义响应式数据 开发环境打印警告，响应式数据可以赋值
     {
       defineReactive$$1(vm, '$attrs', parentData && parentData.attrs || emptyObject, function () {
         !isUpdatingChildComponent && warn("$attrs is readonly.", vm);
@@ -3764,8 +3773,10 @@
     vm._events = Object.create(null);
     vm._hasHookEvent = false;
     // init parent attached events
+    // 获取父组元素上附加的事件
     var listeners = vm.$options._parentListeners;
     if (listeners) {
+      // 把父元素附加的事件添加到vm上
       updateComponentListeners(vm, listeners);
     }
   }
@@ -3910,6 +3921,7 @@
     var options = vm.$options;
 
     // locate first non-abstract parent
+    // 定位第一个非抽象parent
     var parent = options.parent;
     if (parent && !options.abstract) {
       while (parent.$options.abstract && parent.$parent) {
@@ -4965,6 +4977,7 @@
 
       var startTag, endTag;
       /* istanbul ignore if */
+      // 优化相关
       if (config.performance && mark) {
         startTag = "vue-perf-start:" + (vm._uid);
         endTag = "vue-perf-end:" + (vm._uid);
@@ -4972,8 +4985,10 @@
       }
 
       // a flag to avoid this being observed
+      // 标记是vue
       vm._isVue = true;
       // merge options
+      // 合并 options 到vm上的$options上
       if (options && options._isComponent) {
         // optimize internal component instantiation
         // since dynamic options merging is pretty slow, and none of the
@@ -4992,13 +5007,27 @@
       }
       // expose real self
       vm._self = vm;
+
+      // vm的生命周期相关变量初始化
       initLifecycle(vm);
+
+      // 初始化当前组件的事件
       initEvents(vm);
+
+      // 初始化$createElement、_c、$slots、$attrs、$listeners
       initRender(vm);
+      // 调用beforeCraete钩子
       callHook(vm, 'beforeCreate');
+
+      // 解析injections，将inject成员注入到vm上
       initInjections(vm); // resolve injections before data/props
+
+      // 初始化props,methods,data,computed,watch
       initState(vm);
+
+      // 初始化当前实例的provide
       initProvide(vm); // resolve provide after data/props
+      // 调用created钩子
       callHook(vm, 'created');
 
       /* istanbul ignore if */
@@ -5078,10 +5107,19 @@
     this._init(options);
   }
 
+  // 注册 vm的_init方法，初始化vm
   initMixin(Vue);
+
+  // 注册$data、$props, $set, $delete, $watch方法
   stateMixin(Vue);
+
+  // 注册$on,$once,$off,$emit方法
   eventsMixin(Vue);
+
+  // 定义_update和$forceUpdate、$destroy
   lifecycleMixin(Vue);
+
+  // 安装运行时的方便方法、注册$nextTick 和 _render
   renderMixin(Vue);
 
   /*  */
@@ -5419,9 +5457,13 @@
 
     extend(Vue.options.components, builtInComponents);
 
+    // 注册Vue.use()
     initUse(Vue);
+    // 注册VUe.mixin()
     initMixin$1(Vue);
+    // 注册Vue.extend()方法
     initExtend(Vue);
+    // 注册Vue.component()，Vue.directive(), Vue.filter()
     initAssetRegisters(Vue);
   }
 
@@ -5480,7 +5522,7 @@
     'default,defaultchecked,defaultmuted,defaultselected,defer,disabled,' +
     'enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,' +
     'muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,' +
-    'required,reversed,scoped,seamless,selected,sortable,translate,' +
+    'required,reversed,scoped,seamless,selected,sortable,' +
     'truespeed,typemustmatch,visible'
   );
 
@@ -6705,7 +6747,7 @@
       cur = attrs[key];
       old = oldAttrs[key];
       if (old !== cur) {
-        setAttr(elm, key, cur);
+        setAttr(elm, key, cur, vnode.data.pre);
       }
     }
     // #4391: in IE9, setting type can reset value for input[type=radio]
@@ -6725,8 +6767,8 @@
     }
   }
 
-  function setAttr (el, key, value) {
-    if (el.tagName.indexOf('-') > -1) {
+  function setAttr (el, key, value, isInPre) {
+    if (isInPre || el.tagName.indexOf('-') > -1) {
       baseSetAttr(el, key, value);
     } else if (isBooleanAttr(key)) {
       // set attribute for blank value
@@ -9247,7 +9289,7 @@
 
   // Regular Expressions for parsing tags and attributes
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
-  var dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
+  var dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+?\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
   var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z" + (unicodeRegExp.source) + "]*";
   var qnameCapture = "((?:" + ncname + "\\:)?" + ncname + ")";
   var startTagOpen = new RegExp(("^<" + qnameCapture));
@@ -10850,9 +10892,9 @@
         code += genModifierCode;
       }
       var handlerCode = isMethodPath
-        ? ("return " + (handler.value) + "($event)")
+        ? ("return " + (handler.value) + ".apply(null, arguments)")
         : isFunctionExpression
-          ? ("return (" + (handler.value) + ")($event)")
+          ? ("return (" + (handler.value) + ").apply(null, arguments)")
           : isFunctionInvocation
             ? ("return " + (handler.value))
             : handler.value;
@@ -11963,3 +12005,4 @@
   return Vue;
 
 }));
+//# sourceMappingURL=vue.js.map

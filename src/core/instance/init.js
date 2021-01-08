@@ -20,6 +20,7 @@ export function initMixin (Vue: Class<Component>) {
 
     let startTag, endTag
     /* istanbul ignore if */
+    // 优化相关
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       startTag = `vue-perf-start:${vm._uid}`
       endTag = `vue-perf-end:${vm._uid}`
@@ -27,8 +28,10 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     // a flag to avoid this being observed
+    // 标记是vue
     vm._isVue = true
     // merge options
+    // 合并 options 到vm上的$options上
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
@@ -49,13 +52,27 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+
+    // vm的生命周期相关变量初始化
     initLifecycle(vm)
+
+    // 初始化当前组件的事件
     initEvents(vm)
+
+    // 初始化$createElement、_c、$slots、$attrs、$listeners
     initRender(vm)
+    // 调用beforeCraete钩子
     callHook(vm, 'beforeCreate')
+
+    // 解析injections，将inject成员注入到vm上
     initInjections(vm) // resolve injections before data/props
+
+    // 初始化props,methods,data,computed,watch
     initState(vm)
+
+    // 初始化当前实例的provide
     initProvide(vm) // resolve provide after data/props
+    // 调用created钩子
     callHook(vm, 'created')
 
     /* istanbul ignore if */

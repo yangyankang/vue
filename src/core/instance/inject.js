@@ -14,9 +14,12 @@ export function initProvide (vm: Component) {
 }
 
 export function initInjections (vm: Component) {
+  // 根据inject中的key找到provide对应的key的值并放入result数组中
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
     toggleObserving(false)
+
+    // 数组的key定义到vm上
     Object.keys(result).forEach(key => {
       /* istanbul ignore else */
       if (process.env.NODE_ENV !== 'production') {
