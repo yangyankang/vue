@@ -937,6 +937,7 @@
   };
 
   /**
+   * 将所有属性转换成getter和setter
    * Walk through all properties and convert them into
    * getter/setters. This method should only be called when
    * value type is Object.
@@ -1009,6 +1010,7 @@
   }
 
   /**
+   * 给对象的属性定义响应式数据
    * Define a reactive property on an Object.
    */
   function defineReactive$$1 (
@@ -1016,28 +1018,34 @@
     key,
     val,
     customSetter,
-    shallow
+    shallow // false 深度监听 | true 浅度监听
   ) {
     var dep = new Dep();
 
+    // 获取修饰符并且不可配置就return
     var property = Object.getOwnPropertyDescriptor(obj, key);
     if (property && property.configurable === false) {
       return
     }
 
+    // 适用于预定义的getter和stters
     // cater for pre-defined getter/setters
     var getter = property && property.get;
     var setter = property && property.set;
+    // 只要设置了setter 缓存原来的值
     if ((!getter || setter) && arguments.length === 2) {
       val = obj[key];
     }
 
+    // 判断是否递归观察子对象，并将子对象属性转换成 getter/setter,返回子观察对象
     var childOb = !shallow && observe(val);
     Object.defineProperty(obj, key, {
       enumerable: true,
       configurable: true,
       get: function reactiveGetter () {
+        // 如果预定义的gtter存在就调用预定的getter然后返回值
         var value = getter ? getter.call(obj) : val;
+        // 添加依赖
         if (Dep.target) {
           dep.depend();
           if (childOb) {
@@ -1050,8 +1058,10 @@
         return value
       },
       set: function reactiveSetter (newVal) {
+        // 如果预定义的gtter存在就调用预定的getter然后返回值
         var value = getter ? getter.call(obj) : val;
         /* eslint-disable no-self-compare */
+        // 第二种情况是NaN的情况
         if (newVal === value || (newVal !== newVal && value !== value)) {
           return
         }
@@ -1060,6 +1070,7 @@
           customSetter();
         }
         // #7981: for accessor properties without setter
+        // 如果只有getter就return
         if (getter && !setter) { return }
         if (setter) {
           setter.call(obj, newVal);
@@ -1067,6 +1078,7 @@
           val = newVal;
         }
         childOb = !shallow && observe(newVal);
+        // 发送通知
         dep.notify();
       }
     });
