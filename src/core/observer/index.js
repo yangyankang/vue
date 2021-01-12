@@ -45,6 +45,7 @@ export class Observer {
     this.vmCount = 0
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
+      // hasProto表示{}上有__proto__属性，其实就是为了兼容浏览器支不支持__proto__
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {

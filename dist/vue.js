@@ -871,9 +871,11 @@
   ];
 
   /**
+   * 重写Array中的方法，数组变化监听数组中的每一项
    * Intercept mutating methods and emit events
    */
   methodsToPatch.forEach(function (method) {
+    // 缓存原始的方法
     // cache original method
     var original = arrayProto[method];
     def(arrayMethods, method, function mutator () {
@@ -882,6 +884,7 @@
 
       var result = original.apply(this, args);
       var ob = this.__ob__;
+      // 下面的意思其实是， 数组中如果有新增的，就监听劫持新增的数组
       var inserted;
       switch (method) {
         case 'push':
@@ -893,6 +896,7 @@
           break
       }
       if (inserted) { ob.observeArray(inserted); }
+      // 通知改变
       // notify change
       ob.dep.notify();
       return result
@@ -925,6 +929,7 @@
     this.vmCount = 0;
     def(value, '__ob__', this);
     if (Array.isArray(value)) {
+      // hasProto表示{}上有__proto__属性，其实就是为了兼容浏览器支不支持__proto__
       if (hasProto) {
         protoAugment(value, arrayMethods);
       } else {
