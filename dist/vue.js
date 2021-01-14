@@ -2394,7 +2394,7 @@
   // 2. When the children contains constructs that always generated nested Arrays,
   // e.g. <template>, <slot>, v-for, or when the children is provided by user
   // with hand-written render functions / JSX. In such cases a full normalization
-  // is needed to cater to all possible types of children values.
+  // is needed to cater to all possible types of children values. 完全正常化需要迎合所有children的value的可能，转换成一位数组
   function normalizeChildren (children) {
     return isPrimitive(children)
       ? [createTextVNode(children)]
@@ -3378,6 +3378,7 @@
   var SIMPLE_NORMALIZE = 1;
   var ALWAYS_NORMALIZE = 2;
 
+  // 提供更灵活的包装函数
   // wrapper function for providing a more flexible interface
   // without getting yelled at by flow
   function createElement (
@@ -3388,6 +3389,7 @@
     normalizationType,
     alwaysNormalize
   ) {
+    // 如果是数组或者原始值的话就说明传的是子节点
     if (Array.isArray(data) || isPrimitive(data)) {
       normalizationType = children;
       children = data;
@@ -3406,6 +3408,7 @@
     children,
     normalizationType
   ) {
+    // data如果是响应式对象就要发出警告
     if (isDef(data) && isDef((data).__ob__)) {
       warn(
         "Avoid using observed data object as vnode data: " + (JSON.stringify(data)) + "\n" +
@@ -3414,7 +3417,7 @@
       );
       return createEmptyVNode()
     }
-    // object syntax in v-bind
+    // object syntax in v-bind  <component v-bind:is="currentView"></component>  vind:is的用处理
     if (isDef(data) && isDef(data.is)) {
       tag = data.is;
     }
@@ -3422,7 +3425,7 @@
       // in case of component :is set to falsy value
       return createEmptyVNode()
     }
-    // warn against non-primitive key
+    // warn against non-primitive key 不是原始值就发出警告
     if (isDef(data) && isDef(data.key) && !isPrimitive(data.key)
     ) {
       {
@@ -3433,7 +3436,7 @@
         );
       }
     }
-    // support single function children as default scoped slot
+    // support single function children as default scoped slot 处理slot的
     if (Array.isArray(children) &&
       typeof children[0] === 'function'
     ) {
@@ -3441,6 +3444,8 @@
       data.scopedSlots = { default: children[0] };
       children.length = 0;
     }
+
+    // 数组扁平化
     if (normalizationType === ALWAYS_NORMALIZE) {
       children = normalizeChildren(children);
     } else if (normalizationType === SIMPLE_NORMALIZE) {
@@ -4942,6 +4947,7 @@
   function initWatch (vm, watch) {
     for (var key in watch) {
       var handler = watch[key];
+      // 如果是数组就遍历创建watcher
       if (Array.isArray(handler)) {
         for (var i = 0; i < handler.length; i++) {
           createWatcher(vm, key, handler[i]);
@@ -4958,10 +4964,17 @@
     handler,
     options
   ) {
+    // 形式：
+    // c: {
+    //   handler: function (val, oldVal) { /* ... */ },
+    //   deep: true
+    // },
     if (isPlainObject(handler)) {
       options = handler;
       handler = handler.handler;
     }
+
+    // 形式：c:  'myMethods'，这样的形式，直接取vue实例上的methods
     if (typeof handler === 'string') {
       handler = vm[handler];
     }
@@ -5004,6 +5017,7 @@
         return createWatcher(vm, expOrFn, cb, options)
       }
       options = options || {};
+      // 标记是用户watcher
       options.user = true;
       var watcher = new Watcher(vm, expOrFn, cb, options);
       if (options.immediate) {

@@ -27,7 +27,7 @@ export function simpleNormalizeChildren (children: any) {
 // 2. When the children contains constructs that always generated nested Arrays,
 // e.g. <template>, <slot>, v-for, or when the children is provided by user
 // with hand-written render functions / JSX. In such cases a full normalization
-// is needed to cater to all possible types of children values.
+// is needed to cater to all possible types of children values. 完全正常化需要迎合所有children的value的可能，转换成一位数组
 export function normalizeChildren (children: any): ?Array<VNode> {
   return isPrimitive(children)
     ? [createTextVNode(children)]

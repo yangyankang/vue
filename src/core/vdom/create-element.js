@@ -23,6 +23,7 @@ import {
 const SIMPLE_NORMALIZE = 1
 const ALWAYS_NORMALIZE = 2
 
+// 提供更灵活的包装函数
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
 export function createElement (
@@ -33,6 +34,7 @@ export function createElement (
   normalizationType: any,
   alwaysNormalize: boolean
 ): VNode | Array<VNode> {
+  // 如果是数组或者原始值的话就说明传的是子节点
   if (Array.isArray(data) || isPrimitive(data)) {
     normalizationType = children
     children = data
@@ -51,6 +53,7 @@ export function _createElement (
   children?: any,
   normalizationType?: number
 ): VNode | Array<VNode> {
+  // data如果是响应式对象就要发出警告
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== 'production' && warn(
       `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
@@ -59,7 +62,7 @@ export function _createElement (
     )
     return createEmptyVNode()
   }
-  // object syntax in v-bind
+  // object syntax in v-bind  <component v-bind:is="currentView"></component>  vind:is的用处理
   if (isDef(data) && isDef(data.is)) {
     tag = data.is
   }
@@ -67,7 +70,7 @@ export function _createElement (
     // in case of component :is set to falsy value
     return createEmptyVNode()
   }
-  // warn against non-primitive key
+  // warn against non-primitive key 不是原始值就发出警告
   if (process.env.NODE_ENV !== 'production' &&
     isDef(data) && isDef(data.key) && !isPrimitive(data.key)
   ) {
@@ -79,7 +82,7 @@ export function _createElement (
       )
     }
   }
-  // support single function children as default scoped slot
+  // support single function children as default scoped slot 处理slot的
   if (Array.isArray(children) &&
     typeof children[0] === 'function'
   ) {
@@ -87,6 +90,8 @@ export function _createElement (
     data.scopedSlots = { default: children[0] }
     children.length = 0
   }
+
+  // 数组扁平化
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {

@@ -290,6 +290,7 @@ function initMethods (vm: Component, methods: Object) {
 function initWatch (vm: Component, watch: Object) {
   for (const key in watch) {
     const handler = watch[key]
+    // 如果是数组就遍历创建watcher
     if (Array.isArray(handler)) {
       for (let i = 0; i < handler.length; i++) {
         createWatcher(vm, key, handler[i])
@@ -306,10 +307,17 @@ function createWatcher (
   handler: any,
   options?: Object
 ) {
+  // 形式：
+  // c: {
+  //   handler: function (val, oldVal) { /* ... */ },
+  //   deep: true
+  // },
   if (isPlainObject(handler)) {
     options = handler
     handler = handler.handler
   }
+
+  // 形式：c:  'myMethods'，这样的形式，直接取vue实例上的methods
   if (typeof handler === 'string') {
     handler = vm[handler]
   }
@@ -352,6 +360,7 @@ export function stateMixin (Vue: Class<Component>) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
+    // 标记是用户watcher
     options.user = true
     const watcher = new Watcher(vm, expOrFn, cb, options)
     if (options.immediate) {
