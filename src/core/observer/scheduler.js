@@ -69,7 +69,9 @@ if (inBrowser && !isIE) {
  * Flush both queues and run the watchers.
  */
 function flushSchedulerQueue () {
+  // 获取当前的时间戳
   currentFlushTimestamp = getNow()
+  // 标记正在刷新
   flushing = true
   let watcher, id
 
@@ -81,15 +83,21 @@ function flushSchedulerQueue () {
   //    user watchers are created before the render watcher)
   // 3. If a component is destroyed during a parent component's watcher run,
   //    its watchers can be skipped.
+  // 队列按照id从小到大排序，目的如上三点
   queue.sort((a, b) => a.id - b.id)
 
   // do not cache length because more watchers might be pushed
   // as we run existing watchers
+  // 当我们运行现有的观察者的时候我们不要缓存长度，因为有可能添加耕读的watchers
   for (index = 0; index < queue.length; index++) {
     watcher = queue[index]
+
+    // renderWatcher的时候才会有before方法其实是为了触发before生命周期函数
     if (watcher.before) {
       watcher.before()
     }
+
+    // 让wathcer下次可以继续调用
     id = watcher.id
     has[id] = null
     watcher.run()
@@ -160,17 +168,24 @@ function callActivatedHooks (queue) {
  * Push a watcher into the watcher queue.
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
+ * 放入watcher到一个watcher队列
  */
 export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
+  // 当前wathcer没有被处理过
   if (has[id] == null) {
+    // 将当前watcher的id设置为true
     has[id] = true
+
+    // 没有正在刷新就直接将watcher放入队列中
     if (!flushing) {
       queue.push(watcher)
     } else {
+      // 正在刷新中就当前的watcher插入
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
       let i = queue.length - 1
+      // i > index 表示没有没有执行完 ，队列中的watcherid如果大于当前的wacher id  就将当前watcher插入到队列最后一个的前面
       while (i > index && queue[i].id > watcher.id) {
         i--
       }

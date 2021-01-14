@@ -47,6 +47,7 @@ export class Observer {
     if (Array.isArray(value)) {
       // hasProto表示{}上有__proto__属性，其实就是为了兼容浏览器支不支持__proto__
       if (hasProto) {
+        // 重写value原型上的push,splice等方法
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
@@ -212,21 +213,28 @@ export function defineReactive (
  * already exist.
  */
 export function set (target: Array<any> | Object, key: any, val: any): any {
+  // 不是开发环境判断目标对象只要是undefined和原始值就发出警告
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
   if (Array.isArray(target) && isValidArrayIndex(key)) {
+    // 如果是数组防止key索引值大于数组的长度
     target.length = Math.max(target.length, key)
+    // 其实就是调用重写的splice方法
     target.splice(key, 1, val)
     return val
   }
   if (key in target && !(key in Object.prototype)) {
+    // 如果key本身就是在对象里面并且不再object的原型上，就直接返回
     target[key] = val
     return val
   }
+
+  // 拿到当前对象的ob对象
   const ob = (target: any).__ob__
+  // 如果是vue实例或者$data就要发出警告
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -234,11 +242,16 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     )
     return val
   }
+
+  // ob对象不存在就直接返回
   if (!ob) {
     target[key] = val
     return val
   }
+
+  // 给当前响应式对象，设置响应式数据key
   defineReactive(ob.value, key, val)
+  // 通过当前ob对象dep发起通知，这里可以直接这样写的原因，是因为，每个new Observer对象都会创建一个dep对象并收集依赖
   ob.dep.notify()
   return val
 }

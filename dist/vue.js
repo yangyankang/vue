@@ -752,6 +752,9 @@
   Dep.target = null;
   var targetStack = [];
 
+  // 入栈并将当前的watcher赋值给Dep.target
+  // 父子组件嵌套的时候先把父组件对应的watcher入栈。
+  // 再去处理子组件的watcher，子组件的处理完毕后，再把父组件对应的watcher出栈，继续操作
   function pushTarget (target) {
     targetStack.push(target);
     Dep.target = target;
@@ -931,6 +934,7 @@
     if (Array.isArray(value)) {
       // hasProto表示{}上有__proto__属性，其实就是为了兼容浏览器支不支持__proto__
       if (hasProto) {
+        // 重写value原型上的push,splice等方法
         protoAugment(value, arrayMethods);
       } else {
         copyAugment(value, arrayMethods, arrayKeys);
@@ -1095,20 +1099,27 @@
    * already exist.
    */
   function set (target, key, val) {
+    // 不是开发环境判断目标对象只要是undefined和原始值就发出警告
     if (isUndef(target) || isPrimitive(target)
     ) {
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
     }
     if (Array.isArray(target) && isValidArrayIndex(key)) {
+      // 如果是数组防止key索引值大于数组的长度
       target.length = Math.max(target.length, key);
+      // 其实就是调用重写的splice方法
       target.splice(key, 1, val);
       return val
     }
     if (key in target && !(key in Object.prototype)) {
+      // 如果key本身就是在对象里面并且不再object的原型上，就直接返回
       target[key] = val;
       return val
     }
+
+    // 拿到当前对象的ob对象
     var ob = (target).__ob__;
+    // 如果是vue实例或者$data就要发出警告
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
         'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -1116,11 +1127,16 @@
       );
       return val
     }
+
+    // ob对象不存在就直接返回
     if (!ob) {
       target[key] = val;
       return val
     }
+
+    // 给当前响应式对象，设置响应式数据key
     defineReactive$$1(ob.value, key, val);
+    // 通过当前ob对象dep发起通知，这里可以直接这样写的原因，是因为，每个new Observer对象都会创建一个dep对象并收集依赖
     ob.dep.notify();
     return val
   }
@@ -4314,7 +4330,9 @@
    * Flush both queues and run the watchers.
    */
   function flushSchedulerQueue () {
+    // 获取当前的时间戳
     currentFlushTimestamp = getNow();
+    // 标记正在刷新
     flushing = true;
     var watcher, id;
 
@@ -4326,15 +4344,21 @@
     //    user watchers are created before the render watcher)
     // 3. If a component is destroyed during a parent component's watcher run,
     //    its watchers can be skipped.
+    // 队列按照id从小到大排序，目的如上三点
     queue.sort(function (a, b) { return a.id - b.id; });
 
     // do not cache length because more watchers might be pushed
     // as we run existing watchers
+    // 当我们运行现有的观察者的时候我们不要缓存长度，因为有可能添加耕读的watchers
     for (index = 0; index < queue.length; index++) {
       watcher = queue[index];
+
+      // renderWatcher的时候才会有before方法其实是为了触发before生命周期函数
       if (watcher.before) {
         watcher.before();
       }
+
+      // 让wathcer下次可以继续调用
       id = watcher.id;
       has[id] = null;
       watcher.run();
@@ -4405,17 +4429,24 @@
    * Push a watcher into the watcher queue.
    * Jobs with duplicate IDs will be skipped unless it's
    * pushed when the queue is being flushed.
+   * 放入watcher到一个watcher队列
    */
   function queueWatcher (watcher) {
     var id = watcher.id;
+    // 当前wathcer没有被处理过
     if (has[id] == null) {
+      // 将当前watcher的id设置为true
       has[id] = true;
+
+      // 没有正在刷新就直接将watcher放入队列中
       if (!flushing) {
         queue.push(watcher);
       } else {
+        // 正在刷新中就当前的watcher插入
         // if already flushing, splice the watcher based on its id
         // if already past its id, it will be run next immediately.
         var i = queue.length - 1;
+        // i > index 表示没有没有执行完 ，队列中的watcherid如果大于当前的wacher id  就将当前watcher插入到队列最后一个的前面
         while (i > index && queue[i].id > watcher.id) {
           i--;
         }
@@ -4453,6 +4484,7 @@
     isRenderWatcher
   ) {
     this.vm = vm;
+    // 是渲染函数Watcher
     if (isRenderWatcher) {
       vm._watcher = this;
     }
@@ -4471,15 +4503,19 @@
     this.id = ++uid$2; // uid for batching
     this.active = true;
     this.dirty = this.lazy; // for lazy watchers
+    // 收集依赖用的
     this.deps = [];
     this.newDeps = [];
     this.depIds = new _Set();
     this.newDepIds = new _Set();
+
     this.expression = expOrFn.toString();
     // parse expression for getter
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn;
     } else {
+      // expOrFn是字符串的时候，例如watch: {'person.name': function...}
+      // parsePath('person.name')返回一个函数获取的 person.name 的值
       this.getter = parsePath(expOrFn);
       if (!this.getter) {
         this.getter = noop;
@@ -4592,6 +4628,7 @@
         var oldValue = this.value;
         this.value = value;
         if (this.user) {
+          // 用户watcher
           try {
             this.cb.call(this.vm, value, oldValue);
           } catch (e) {
