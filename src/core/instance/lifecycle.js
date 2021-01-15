@@ -65,17 +65,18 @@ export function lifecycleMixin (Vue: Class<Component>) {
     const prevVnode = vm._vnode
     const restoreActiveInstance = setActiveInstance(vm)
     vm._vnode = vnode
-    // Vue.prototype.__patch__ is injected in entry points
+    // Vue.prototype.__patch__ is injected in entry points  在入口注入__patch__
     // based on the rendering backend used.
     if (!prevVnode) {
-      // initial render
+      // initial render  如果没有prevnode 表示就是首次渲染
+      // 每次更新完就就会把最新的vnode 放到vm._vnode中
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
     restoreActiveInstance()
-    // update __vue__ reference
+    // update __vue__ reference 更新update __vue__ 的指向
     if (prevEl) {
       prevEl.__vue__ = null
     }

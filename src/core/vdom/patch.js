@@ -67,12 +67,14 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
   return map
 }
 
+// backend: { nodeOps, modules }
 export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
 
   const { modules, nodeOps } = backend
 
+  // 把hooks相应的钩子放入到cbs对象中
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
@@ -137,6 +139,7 @@ export function createPatchFunction (backend) {
       // potential patch errors down the road when it's used as an insertion
       // reference node. Instead, we clone the node on-demand before creating
       // associated DOM element for it.
+      // 这个vnode在以前的渲染中使用过!现在它被用作一个新节点，当它被用作插入引用节点时，覆盖它的elm将会导致潜在的补丁错误。相反，在为其创建关联的DOM元素之前，我们按需克隆该节点。
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
 
@@ -704,19 +707,29 @@ export function createPatchFunction (backend) {
     }
 
     let isInitialPatch = false
+
+    // 新插入到页面汇总的虚拟dom队列，为了invokeInsertHook使用
     const insertedVnodeQueue = []
 
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
+      // 比如调用$mount()没有传入参数，就不会渲染到页面中
+      // isInitialPatch其实就是标记不渲染到页面, 只讲创建的elm挂载到vm.elm属性上
       isInitialPatch = true
+
+      // crateElm没传父节点相当于不插入到父节点中
       createElm(vnode, insertedVnodeQueue)
     } else {
+      // 判断是否是真实dom
       const isRealElement = isDef(oldVnode.nodeType)
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
+        // 不是真实dom并且是是相同的虚拟节点 就比对
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+
         if (isRealElement) {
+          // 是真实dom
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
           // a successful hydration.
@@ -740,6 +753,7 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
+          // 创建空的vnode，将oldVnode挂载到elm属性上
           oldVnode = emptyNodeAt(oldVnode)
         }
 
@@ -788,6 +802,7 @@ export function createPatchFunction (backend) {
           }
         }
 
+        // 从父节点上移除真实dom
         // destroy old node
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)
