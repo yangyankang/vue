@@ -19,7 +19,7 @@ export const createCompiler = createCompilerCreator(function baseCompile (
     optimize(ast, options)
   }
 
-  // 将抽象语法树生成js代码
+  // 将抽象语法树生成字符串形式js代码
   const code = generate(ast, options)
 
 

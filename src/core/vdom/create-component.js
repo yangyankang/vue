@@ -183,10 +183,12 @@ export function createComponent (
   }
 
   // install component management hooks onto the placeholder node
+  //安装组件的钩子函数
   installComponentHooks(data)
 
   // return a placeholder vnode
   const name = Ctor.options.name || tag
+  // 创建自定义组件的Vnode，设置自定义组件的名字
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
