@@ -7,24 +7,27 @@
   </head>
   <body>
     <div id="app">
-      <ul>
-        <li v-for="value in arr">{{value}}</li>
-      </ul>
-      <button @click="add">添加</button>
+      <h1>Vue<span>模板编译过程</span></h1>
+      <p>{{ msg }}</p>
+      <comp @myclick="handler"></comp>
     </div>
     <script src="../../dist/vue.js"></script>
     <script>
+      Vue.component('comp', {
+        template: '<div>I am a comp</div>'
+      })
       const vm = new Vue({
         el:'#app',
         data: {
-          arr: [1,2,3,4,5]
+          msg: '哈哈哈哈'
         },
         methods: {
-          add() {
-            this.arr.splice(1,0,6)
+          handler() {
+            console.log('handler')
           }
         }
       });
+      console.log(vm.$options.render)
     </script>
   </body>
 </html>
