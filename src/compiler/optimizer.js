@@ -18,6 +18,9 @@ const genStaticKeysCached = cached(genStaticKeys)
  *    create fresh nodes for them on each re-render;
  * 2. Completely skip them in the patching process.
  */
+/**
+ * 标记静态节点，就是标签中是纯文本内容，永远不会变化，在patch过程中就会跳过
+ */
 export function optimize (root: ?ASTElement, options: CompilerOptions) {
   if (!root) return
   isStaticKey = genStaticKeysCached(options.staticKeys || '')
@@ -36,7 +39,7 @@ function genStaticKeys (keys: string): Function {
 }
 
 function markStatic (node: ASTNode) {
-  node.static = isStatic(node)
+  node.static = isStatic(node) // 表镜静态节点
   if (node.type === 1) {
     // do not make component slot content static. this avoids
     // 1. components not able to mutate slot nodes
@@ -75,6 +78,7 @@ function markStaticRoots (node: ASTNode, isInFor: boolean) {
     // For a node to qualify as a static root, it should have children that
     // are not just static text. Otherwise the cost of hoisting out will
     // outweigh the benefits and it's better off to just always render it fresh.
+    // 静态根节点必须有children，vue认为如果一个元素汇总只有文本节点，此时不是静态根节点，此时优化会带来负面影响
     if (node.static && node.children.length && !(
       node.children.length === 1 &&
       node.children[0].type === 3
@@ -84,6 +88,7 @@ function markStaticRoots (node: ASTNode, isInFor: boolean) {
     } else {
       node.staticRoot = false
     }
+    // 检测当前节点的子节点中是否有静态的Root
     if (node.children) {
       for (let i = 0, l = node.children.length; i < l; i++) {
         markStaticRoots(node.children[i], isInFor || !!node.for)
@@ -107,8 +112,8 @@ function isStatic (node: ASTNode): boolean {
   return !!(node.pre || (
     !node.hasBindings && // no dynamic bindings
     !node.if && !node.for && // not v-if or v-for or v-else
-    !isBuiltInTag(node.tag) && // not a built-in
-    isPlatformReservedTag(node.tag) && // not a component
+    !isBuiltInTag(node.tag) && // not a built-in 不是内置组件
+    isPlatformReservedTag(node.tag) && // not a component 不是一个组件
     !isDirectChildOfTemplateFor(node) &&
     Object.keys(node).every(isStaticKey)
   ))
